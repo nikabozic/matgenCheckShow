@@ -1,0 +1,18 @@
+GEMINI GENERIRA, OPENAI PROVJERAVA
+Prenesi sadržaj ovog foldera u korijen GitHub repozitorija i commitaj.
+Vercel > Settings > Environment Variables, Production:
+GEMINI_API_KEY = tvoj Gemini ključ
+GEMINI_MODEL = gemini-3.5-flash-lite
+OPENAI_API_KEY = tvoj OpenAI ključ
+OPENAI_MODEL = gpt-4.1-mini
+ACCESS_PIN = po želji, postojeći PIN vrijedi.
+Napravi Redeploy i pričekaj Ready. Prvo testiraj jedan zadatak.
+Stranica poziva /api/generate-checked. Gemini generira nacrt, OpenAI ga samostalno rješava i ispravlja ili zamjenjuje. Prikazuje se samo konačna verzija.
+Ako bilo koji korak ne uspije, prikazuje se greška, a nacrt se ne vraća kao konačan rezultat.
+Gemini ima 25 sekundi, ukupni postupak 55 sekundi. Za velike skupove pokušaj manje zadataka.
+AI provjera ne jamči matematičku točnost. Potrebna je ljudska provjera prije korištenja za ocjenjivanje.
+OpenAI potrošnja se plaća zasebno; provjera dodaje vrijeme i tokene.
+Ostali handleri ostali su u projektu. public/index.html nastaje iz data/template.html tijekom builda.
+Provjeren build i mock scenariji. Stvarni API pozivi nisu testirani.
+
+NOVO: Gumb Prikaži provjeru uz svaki zadatak prikazuje stvarni Gemini nacrt i OpenAI rezultat. Žuto su označena promijenjena polja. Razlog navodi OpenAI. Otvaranje prikaza otkriva rješenja. Postojeće varijable i ključevi ostaju isti.

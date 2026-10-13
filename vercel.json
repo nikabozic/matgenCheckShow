@@ -1,0 +1,15 @@
+{
+  "buildCommand": "node scripts/build.mjs",
+  "outputDirectory": "public",
+  "functions": {
+    "api/generate.js": {
+      "maxDuration": 60
+    },
+    "api/generate-openai.js": {
+      "maxDuration": 60
+    },
+    "api/generate-checked.js": {
+      "maxDuration": 60
+    }
+  }
+}

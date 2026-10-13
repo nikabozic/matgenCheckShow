@@ -1,0 +1,203 @@
+
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pale Matematika Gen</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #2563eb; --success: #22c55e; --error: #ef4444; --bg: #f8fafc; }
+        body { font-family: 'Montserrat', sans-serif; font-weight: 500; background-color: var(--bg); color: #1e293b; margin: 0; padding: 20px; }
+        .container { max-width: 900px; margin: 0 auto; }
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; background: white; padding: 15px 25px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .card { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 15px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .setup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .input-group { display: flex; flex-direction: column; gap: 8px; }
+        label { font-size: 13px; color: #64748b; }
+        select, input, button { font-family: 'Montserrat', sans-serif; font-weight: 500; padding: 12px; border-radius: 10px; border: 1.5px solid #e2e8f0; font-size: 15px; outline: none; }
+        button { background: var(--primary); color: white; border: none; cursor: pointer; margin-top: 20px; width: 100%; transition: 0.2s; }
+        button:hover { background: #1d4ed8; }
+        button:disabled { background: #cbd5e1; cursor: not-allowed; }
+        
+        .option-grid { display: flex; gap: 12px; margin: 20px 0; flex-wrap: wrap; }
+        .option-btn { 
+            flex: 1; min-width: 160px; background: #2563eb; color: white; 
+            border: none; padding: 18px 10px; border-radius: 12px; cursor: pointer; 
+            font-family: 'Montserrat', sans-serif; font-weight: 500; transition: 0.2s;
+        }
+        .option-btn:hover { background: #1e40af; transform: translateY(-2px); }
+        .correct { background: var(--success) !important; box-shadow: 0 4px 10px rgba(34,197,94,0.4); }
+        .wrong { background: var(--error) !important; box-shadow: 0 4px 10px rgba(239,68,68,0.4); }
+        
+        .feedback { padding: 20px; border-radius: 12px; margin-top: 15px; font-size: 14px; line-height: 1.6; border-left: 5px solid transparent; }
+        .session-divider { background: #e2e8f0; padding: 15px; border-radius: 12px; margin: 40px 0 20px; display: flex; justify-content: space-between; font-size: 14px; border-left: 6px solid var(--primary); }
+        .hidden { display: none; }
+        h4 { margin-top: 0; color: var(--primary); }
+    </style>
+<style>
+.review-panel{margin-top:24px;border:1px solid #cbd5e1;border-radius:12px;padding:16px;font-size:15px}
+.review-panel summary{cursor:pointer;font-weight:700;color:#245be8}
+.review-columns{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.review-field{padding:12px;margin-bottom:8px;border-radius:8px;background:#f1f5f9;overflow-wrap:anywhere}
+.review-field div{white-space:pre-wrap;margin-top:6px}
+.review-changed{background:#fff4cc;border-left:4px solid #d69e00}
+@media(max-width:700px){.review-columns{grid-template-columns:1fr}}
+</style></head>
+<body>
+<div class="container">
+    <header><img src="PALE-logo-black.svg" style="height:45px;"><h3 style="color:#64748b; margin:0;">Matematički Izazov</h3></header>
+    <div class="card">
+        <div class="setup-grid">
+            <div class="input-group"><label>Razred</label><select id="sel-razred" onchange="updateTopics()">
+                GRADE_OPTIONS
+            </select></div>
+            <div class="input-group"><label>Tema</label><select id="sel-tema"></select></div>
+            <div class="input-group"><label>Broj zadataka</label><input type="number" id="inp-broj" value="3" min="1" max="10"></div>
+            <div class="input-group"><label>Težina</label><select id="sel-tezina">
+                <option value="Lako">Lako</option><option value="Srednje" selected>Srednje</option><option value="Genijalac">Genijalac</option>
+            </select></div>
+            <div style="grid-column: span 2; display: flex; gap: 20px; margin-top:10px;">
+                <label style="cursor:pointer;"><input type="checkbox" id="chk-negativni"> Negativni bodovi</label>
+                <label style="cursor:pointer;"><input type="checkbox" id="chk-prikazi-tocno" checked> Prikaži točno rješenje</label>
+            </div>
+        </div>
+        <button id="btn-gen" onclick="generate()">Generiraj zadatke</button>
+    </div>
+    <div id="quiz-area" class="hidden">
+        <div style="display:flex; justify-content:space-between; margin-bottom:20px; font-weight:bold; background:white; padding:15px; border-radius:10px;">
+            <span>Bodovi: <span id="stat-score" style="color:var(--primary)">0</span></span>
+            <span>Uspješnost: <span id="stat-ratio">0/0</span></span>
+        </div>
+        <div id="tasks-container"></div>
+    </div>
+</div>
+<script>
+    const csvData = TOPIC_DATA;
+    let score = 0, correct = 0, answered = 0, trackers = {};
+
+    function updateTopics() {
+        const r = document.getElementById('sel-razred').value;
+        const t = document.getElementById('sel-tema');
+        t.innerHTML = "";
+        csvData.filter(x => x.razred === r).forEach(i => {
+            let o = document.createElement('option');
+            o.value = i.tema; o.innerText = i.tema;
+            o.dataset.uputa = i.prompt; o.dataset.primjena = i.primjena;
+            t.appendChild(o);
+        });
+    }
+    window.onload = updateTopics;
+
+    async function generate() {
+        if (!sessionStorage.getItem('matgen-pin')) { const pin = prompt('Ako je postavljen PIN za pristup, unesi ga. Inače ostavi prazno.'); if(pin===null)return; sessionStorage.setItem('matgen-pin', pin || '-'); }
+        const btn = document.getElementById('btn-gen');
+        const sel = document.getElementById('sel-tema');
+        const opt = sel.options[sel.selectedIndex];
+        if(!opt) return;
+
+        const body = {
+            razred: document.getElementById('sel-razred').value,
+            tema: sel.value,
+            uputa: opt.dataset.uputa,
+            primjena: opt.dataset.primjena,
+            broj: document.getElementById('inp-broj').value,
+            tezina: document.getElementById('sel-tezina').value,
+            prikaziTocno: document.getElementById('chk-prikazi-tocno').checked,
+            negativni: document.getElementById('chk-negativni').checked
+        };
+
+        btn.disabled = true; btn.innerText = "Pripremam...";
+
+        try {
+            const res = await fetch('/api/generate-checked', { method: 'POST', headers: {'Content-Type': 'application/json', 'x-access-pin': sessionStorage.getItem('matgen-pin') || ''}, body: JSON.stringify(body) });
+            const data = await res.json();
+            
+            if (data.error) {
+                if(res.status === 403) sessionStorage.removeItem('matgen-pin');
+                let msg = typeof data.details === 'object' ? JSON.stringify(data.details) : (data.details || data.error);
+                throw new Error(msg);
+            }
+
+            const id = Date.now();
+            trackers[id] = { c: 0, t: data.length, s: 0 };
+            const div = document.createElement('div');
+            div.className = "session-divider";
+            div.innerHTML = `<span>⬇️ ${body.razred}. razred | ${body.tema}</span><span id="g-${id}">Točnih 0 od ${data.length} | Bodovi: 0</span>`;
+            document.getElementById('tasks-container').prepend(div);
+            
+            data.reverse().forEach(z => {
+                const el = createTaskElement(z, id, body);
+                div.after(el);
+            });
+            document.getElementById('quiz-area').classList.remove('hidden');
+        } catch (e) { 
+            alert("Greška: " + e.message); 
+            console.error(e);
+        } finally { 
+            btn.disabled = false; btn.innerText = "Generiraj zadatke"; 
+        }
+    }
+
+    function createReview(review) {
+        const details=document.createElement('details'); details.className='review-panel';
+        const summary=document.createElement('summary');
+        summary.textContent='Prikaži provjeru · '+(review.promijenjena_polja.length?'OpenAI je napravio izmjene':'Bez izmjena');
+        details.appendChild(summary);
+        const note=document.createElement('p');note.textContent='Ovaj prikaz otkriva rješenja. Razlog izmjene navodi OpenAI; provjera može propustiti grešku.';details.appendChild(note);
+        const reason=document.createElement('p');reason.textContent='Razlog: '+review.razlog;details.appendChild(reason);
+        const columns=document.createElement('div');columns.className='review-columns';
+        const fields={naslov:'Naslov',zadatak:'Zadatak',opcije:'Ponuđeni odgovori',tocan_indeks:'Označeni točan odgovor',objasnjenje:'Objašnjenje'};
+        for(const [title,task] of [['Gemini izvornik',review.izvorni],['OpenAI konačna verzija',review.konacni]]) {
+            const column=document.createElement('section');const heading=document.createElement('h4');heading.textContent=title;column.appendChild(heading);
+            for(const [key,label] of Object.entries(fields)) {
+                const field=document.createElement('div');field.className='review-field';
+                if(review.promijenjena_polja.includes(key))field.classList.add('review-changed');
+                const name=document.createElement('strong');name.textContent=label+(review.promijenjena_polja.includes(key)?' — promijenjeno':'');field.appendChild(name);
+                const value=document.createElement('div');
+                const v=task?.[key];
+                value.textContent=key==='opcije'&&Array.isArray(v)?v.map((o,i)=>(i+1)+'. '+o).join('\n'):key==='tocan_indeks'&&Number.isInteger(v)?'Opcija '+(v+1):typeof v==='string'?v:JSON.stringify(v)??'Nedostaje';
+                field.appendChild(value);column.appendChild(field);
+            }
+            columns.appendChild(column);
+        }
+        details.appendChild(columns);return details;
+    }
+
+    function createTaskElement(z, id, setup) {
+        const box = document.createElement('div'); box.className = "card";
+        const grid = document.createElement('div'); grid.className = "option-grid";
+        const fb = document.createElement('div'); fb.className = "feedback hidden";
+        const zadatakTekst = z.zadatak || z.tekst || "Nema teksta.";
+
+        z.opcije.forEach((o, i) => {
+            const b = document.createElement('button'); b.className = "option-btn"; b.innerText = o;
+            b.onclick = () => {
+                grid.querySelectorAll('button').forEach(x => x.disabled = true);
+                const p = {"Lako":1,"Srednje":2,"Genijalac":4}[setup.tezina];
+                answered++;
+                if (i === z.tocan_indeks) {
+                    b.classList.add('correct'); score += p; correct++; trackers[id].c++; trackers[id].s += p;
+                    fb.innerHTML = `<b>Točno!</b><br>${z.objasnjenje.replace(/\n/g, '<br>')}`; 
+                    fb.style.background = "#dcfce7"; fb.style.borderColor = "#22c55e";
+                } else {
+                    b.classList.add('wrong'); if(setup.negativni) { score -= (p/2); trackers[id].s -= (p/2); }
+                    if(setup.prikaziTocno) { grid.querySelectorAll('button')[z.tocan_indeks].classList.add('correct'); }
+                    fb.innerHTML = `<b>Netočno.</b><br>${z.objasnjenje.replace(/\n/g, '<br>')}`; 
+                    fb.style.background = "#fee2e2"; fb.style.borderColor = "#ef4444";
+                }
+                fb.classList.remove('hidden');
+                document.getElementById('stat-score').innerText = score;
+                document.getElementById('stat-ratio').innerText = `${correct}/${answered}`;
+                document.getElementById(`g-${id}`).innerText = `Točnih ${trackers[id].c} od ${trackers[id].t} | Bodovi: ${trackers[id].s}`;
+            };
+            grid.appendChild(b);
+        });
+        box.innerHTML = `<h4>${z.naslov}</h4><p>${zadatakTekst}</p>`;
+        box.appendChild(grid); box.appendChild(fb);
+        if(z.provjera) box.appendChild(createReview(z.provjera));
+        return box;
+    }
+</script>
+</body>
+</html>
